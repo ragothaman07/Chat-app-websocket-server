@@ -1,17 +1,20 @@
-FROM maven:# Use an official Maven image with Java 23
-           FROM maven:3.9.9-eclipse-temurin-23
+# Stage 1: Build the application using Maven
+FROM maven:3.9.9-eclipse-temurin-23 AS build
 
-           # Set the working directory inside the container
-           WORKDIR /app
+# Copy project files
+COPY . .
 
-           # Copy the Maven project files (pom.xml and source code)
-           COPY . .
+# Build the project and skip tests
+RUN mvn clean package -DskipTests
 
-           # Build the application using Maven
-           RUN mvn clean package
+# Stage 2: Run the application with a lightweight JDK image
+FROM eclipse-temurin:23.0.1_10-jdk
 
-           # Expose port 8080 for the application
-           EXPOSE 8080
+# Copy the built JAR file from the previous stage
+COPY --from=build /target/websocket_demo-0.0.1-SNAPSHOT.jar websocket_demo.jar
 
-           # Run the application
-           CMD ["java", "-jar", "target/your-app.jar"]
+# Expose port 8080
+EXPOSE 8080
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "websocket_demo.jar"]
